@@ -1,0 +1,396 @@
+package a;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
+import a.spoluprace.Spoluprace;
+
+public class Test {
+
+	public static void main(String[] args) {
+		
+		Scanner sc = new Scanner(System.in);
+		Map<Integer, Employee> databaze = new HashMap<>();
+		String urlLoc = "jdbc:sqlite:moje_data.db";
+		try (Connection conn = DriverManager.getConnection(urlLoc)) {
+		    Statement st = conn.createStatement();
+		    
+		    ResultSet rsZam = st.executeQuery("SELECT * FROM zamestnanci");
+		    int maxId = -1;
+		    while (rsZam.next()) {
+		        int id = rsZam.getInt("id");
+		        String jmeno = rsZam.getString("jmeno");
+		        String prijmeni = rsZam.getString("prijmeni");
+		        int rok = rsZam.getInt("rok");
+		        String typ = rsZam.getString("typ");
+
+		        Employee nacteny = typ.equals("Analytik") ? 
+		            new DataAnalyst(jmeno, prijmeni, rok) : new SecurityExpert(jmeno, prijmeni, rok);
+		        
+		        nacteny.setId(id); 
+		        databaze.put(id, nacteny);
+		        if (id > maxId) maxId = id;
+		    }
+		    Employee.setidCounter(maxId + 1); 
+
+		 
+		    ResultSet rsVaz = st.executeQuery("SELECT * FROM vazby");
+		    while (rsVaz.next()) {
+		        Employee e = databaze.get(rsVaz.getInt("id_zam"));
+		        if (e != null) {
+		            e.pridejKolegu(rsVaz.getInt("id_kol"), Spoluprace.valueOf(rsVaz.getString("uroven")));
+		        }
+		    }
+		    System.out.println("Data nactena z databaze");
+		} catch (Exception e) {
+		    System.out.println("Lokalni databaze nebyla nalezena startuji s prazdnou");
+		}
+		boolean bezi = true;
+		while(bezi) {
+			
+		
+			
+		System.out.println("Menu databaze");
+		System.out.println("1. pridání nového zamestnance");
+		System.out.println("2. pridani spoluprace");
+		System.out.println("3. odebrani pracovnika");
+		System.out.println("4. vyhledat pracovnika");
+		System.out.println("5. spusteni dovednosti zamestnance");
+		System.out.println("6. seradit zamestnance abecedne po skupinach");
+		System.out.println("7. statistiky o spolupraci ve firme");
+		System.out.println("8. pocet yamestnancu ve skupinach");
+		System.out.println("9. ulozeni zamestnancu do souboru");
+		System.out.println("10. nacteni ze souboru");
+		System.out.println("0. konec");
+		int volba = sc.nextInt();
+        sc.nextLine();
+		switch(volba) {
+		case 1:
+            System.out.print("Jmeno: ");
+            String jmeno = sc.nextLine();
+            System.out.print("Prijmení: ");
+            String prijmeni = sc.nextLine();
+            System.out.print("Rok narozeni: ");
+            int rok = sc.nextInt();
+            
+            System.out.print("Typ (1-Analytik, 2-Specialista): ");
+            int typ = sc.nextInt();
+            
+            Employee novy;
+            if (typ == 1) {
+                novy = new DataAnalyst(jmeno, prijmeni, rok);
+            } else {
+                novy = new SecurityExpert(jmeno, prijmeni, rok);
+            }
+            
+            databaze.put(novy.getId(), novy);
+            System.out.println("Ulozeno s ID: " + novy.getId());
+            break;
+		case 2:
+		    System.out.print("ID zamestnance, kteremu pridavame kolegu: ");
+		    int idZam = sc.nextInt();
+		    System.out.print("ID kolegy: ");
+		    int idKol = sc.nextInt();
+		    sc.nextLine();
+		    if (idZam == idKol) {
+		        System.out.println("Zamestnanec nemuze spolupracovat sam se sebou!");
+		        break;
+		    }
+
+		    System.out.println("Úroveň (1-spatna, 2-prumerna, 3-dobra): ");
+		    int u = sc.nextInt();
+		    Spoluprace spoluprace = 
+		    	(u == 1) ? Spoluprace.SPATNA : 
+                (u == 2) ? Spoluprace.PRUMERNA : 
+                (u == 3) ? Spoluprace.DOBRA : null;
+
+		    if (spoluprace == null) {
+		    	System.out.println("Neplatna uroven spoluprace (zadejte 1-3)");
+		    } else {
+		    	Employee e1 = databaze.get(idZam);
+		    	Employee e2= databaze.get(idKol);
+		    	
+		    	if (e1 != null && e2!=null) {
+		    		e1.pridejKolegu(idKol, spoluprace);
+		    		e2.pridejKolegu(idZam, spoluprace);
+		    		System.out.println("Spolupráce pridana.");
+		    	} else {
+		    		System.out.println("Jedno z ID neexistuje");
+		    	}
+		    }
+		    break;
+		case 3:
+			System.out.println("Zadejte ID zamestnance k odebrani: ");
+			int idDel = sc.nextInt();
+			if (databaze.containsKey(idDel)) {
+				databaze.remove(idDel);
+				for(Employee ostatni : databaze.values()) {
+					ostatni.getKolegove().remove(idDel);
+				}
+				System.out.println("zamestnanec byl smazan");
+			}
+			else {
+				System.out.println("ID nebylo nalezeno");
+			}
+			break;
+		case 4:
+			System.out.println("zadejte ID zamestnance");
+			int idFind = sc.nextInt();
+			Employee e = databaze.get(idFind);
+			if(e !=null) {
+				System.out.println("Jmeno: "+ e.getJmeno() );
+				System.out.println("Prijmeni: "+ e.getPrijmeni() );
+				System.out.println("Rok narozeni: "+ e.getRok() );
+				String typ1 = "zamestnanec";
+				if (e instanceof DataAnalyst) {
+				    typ1 = "Datovy analytik";
+				} else if (e instanceof SecurityExpert) {
+				    typ1 = "Bezpecnostni expert";
+				}
+
+				System.out.println("Skupina: " + typ1);
+				int pocet = e.getKolegove().size();
+				System.out.println("Ma "+pocet+" kolegu/y");
+				if (pocet >0) {
+					int dobra = 0, prumerna = 0, spatna=0;
+					
+				for(Spoluprace s:e.getKolegove().values()) {
+					
+					if (s == Spoluprace.DOBRA) dobra++;
+					else if (s == Spoluprace.PRUMERNA) prumerna++;
+					else if(s == Spoluprace.SPATNA) spatna++;
+					}
+				System.out.println("Statistika spoluprace: Dobra: "+dobra+
+						", prumerna: "+prumerna+", spatna: "+spatna);
+			}
+			}
+				else {
+					System.out.println("Id"+idFind+"nebylo v databazi nalezeno");
+			}
+		case 5:
+		    System.out.print("Zadejte ID zamestnance: ");
+		    int idDovednost = sc.nextInt();
+		    Employee emp = databaze.get(idDovednost);
+
+		    if (emp == null) {
+		        System.out.println("ID neexistuje.");
+		    } else if (emp instanceof DataAnalyst) {
+		       
+		        DataAnalyst ana = (DataAnalyst) emp;
+		        int idNejlepsiho = ana.najdiNejvicSpolecnych(databaze);
+		        
+		        if (idNejlepsiho != -1) {
+		            Employee nej = databaze.get(idNejlepsiho);
+		            System.out.println("Analytik " + ana.getJmeno() + "Nejvice spolecnych znamych ma s " 
+		                               + nej.getJmeno() + " (ID: " + idNejlepsiho + ")");
+		        } else {
+		            System.out.println("Analytik nema dostatek spolupracovniku pro analyzu vazeb.");
+		        }
+
+		    } else if (emp instanceof SecurityExpert) {
+		      
+		    	SecurityExpert spec = (SecurityExpert) emp;
+		        double skore = spec.RiskScore();
+		        System.out.println("Bezpecnostni specialista " + spec.getJmeno() + " vypočítal Risk Score: " + skore);
+
+		    } else {
+		        System.out.println("nastala chyba.");
+		    }
+		    break;
+		case 6:
+		    List<DataAnalyst> analytici = new ArrayList<>();
+		    List<SecurityExpert> specialisti = new ArrayList<>();
+
+		    for (Employee em : databaze.values()) {
+		        if (em instanceof DataAnalyst) {
+		            analytici.add((DataAnalyst) em);
+		        } else if (em instanceof SecurityExpert) {
+		            specialisti.add((SecurityExpert) em);
+		        }
+		    }
+
+
+		    analytici.sort((a, b) -> a.getPrijmeni().compareToIgnoreCase(b.getPrijmeni()));
+		    specialisti.sort((a, b) -> a.getPrijmeni().compareToIgnoreCase(b.getPrijmeni()));
+
+
+		    System.out.println("\nDatovi analytici:");
+		    if (analytici.isEmpty()) System.out.println("Zadni analytici v databazi.");
+		    for (DataAnalyst a : analytici) {
+		        System.out.println(a.getPrijmeni() + " " + a.getJmeno() + " [ID: " + a.getId() + "]");
+		    }
+
+		    System.out.println("\nBeypecnostni experti:");
+		    if (specialisti.isEmpty()) System.out.println("Zadni experti v databazi.");
+		    for (SecurityExpert s : specialisti) {
+		        System.out.println(s.getPrijmeni() + " " + s.getJmeno() + " [ID: " + s.getId() + "]");
+		    }
+		    break;
+		case 7:
+		    if (databaze.isEmpty()) {
+		        System.out.println("Databaze je prazdna");
+		        break;
+		    }
+
+		    int celkemDobra = 0, celkemPrumerna = 0, celkemSpatna = 0;
+		    Employee nejvetsiSitar = null;
+		    int maxVazeb = -1;
+
+		    for (Employee e1 : databaze.values()) {
+		        for (Spoluprace s : e1.getKolegove().values()) {
+		            if (s == Spoluprace.DOBRA) celkemDobra++;
+		            else if (s == Spoluprace.PRUMERNA) celkemPrumerna++;
+		            else if (s == Spoluprace.SPATNA) celkemSpatna++;
+		        }
+
+		        int pocetVazeb = e1.getKolegove().size();
+		        if (pocetVazeb > maxVazeb) {
+		            maxVazeb = pocetVazeb;
+		            nejvetsiSitar = e1;
+		        }
+		    }
+
+		    String prevaha = "vyrovnana";
+		    if (celkemDobra >= celkemPrumerna && celkemDobra >= celkemSpatna) prevaha = "Dobra";
+		    else if (celkemPrumerna >= celkemDobra && celkemPrumerna >= celkemSpatna) prevaha = "Prumerna";
+		    else prevaha = "Spatna";
+
+		    System.out.println("Prevazujici kvalita spoluprace ve firme: " + prevaha);
+		    System.out.println("Dobra: " + celkemDobra + " Prumerna: " + celkemPrumerna + " Spatna " + celkemSpatna);
+		    
+		    if (nejvetsiSitar != null) {
+		        System.out.println("Zamestnanec s nejvice vazbami: " + nejvetsiSitar.getJmeno() + 
+		                           " " + nejvetsiSitar.getPrijmeni() + " pocet vazeb: " + maxVazeb);
+		    }
+		    break;
+		case 8:
+		    int pocetAnalytiku = 0;
+		    int pocetExpertu = 0;
+
+		    for (Employee e2 : databaze.values()) {
+		        if (e2 instanceof DataAnalyst) {
+		            pocetAnalytiku++;
+		        } else if (e2 instanceof SecurityExpert) {
+		            pocetExpertu++;
+		        }
+		    }
+
+		    System.out.println("Pocet zamestnancu v jednotlivych skupinach");
+		    System.out.println("Datovi analytici: " + pocetAnalytiku);
+		    System.out.println("Bezpecnostni experti: " + pocetExpertu);
+		    System.out.println("Celkovy pocet v databazi: " + databaze.size());
+		    break;
+		case 9:
+		    try {
+		        FileWriter writer = new FileWriter("zamestnanci.txt");
+		        
+		        for (Employee e3 : databaze.values()) {
+		            String typ2 = (e3 instanceof DataAnalyst) ? "Analytik" : "Expert";
+		            
+		            writer.write(e3.getId() + ";" + e3.getJmeno() + ";" + e3.getPrijmeni() + ";" + e3.getRok() + ";" + typ2 + "\n");
+		        }
+		        
+		        writer.close();
+		        System.out.println("Data byla uspesne ulozena do souboru");
+		        
+		    } catch (IOException exc) {
+		        System.out.println("Chyba pri zapisu do souboru");
+		    }
+		    break;
+		case 10:
+		    try {
+		        File soubor = new File("zamestnanci.txt");
+		        Scanner ctenar = new Scanner(soubor);
+		        
+		        databaze.clear();
+		        
+		        while (ctenar.hasNextLine()) {
+		            String radek = ctenar.nextLine();
+		            String[] data = radek.split(";");
+		            
+		            int id = Integer.parseInt(data[0]);
+		            String jmeno1 = data[1];
+		            String prijmeni1 = data[2];
+		            int rok1 = Integer.parseInt(data[3]);
+		            String typ3 = data[4];
+		            
+		            Employee nacteny;
+		            if (typ3.equals("Analytik")) {
+		                nacteny = new DataAnalyst(jmeno1, prijmeni1, rok1);
+		            } else {
+		                nacteny = new SecurityExpert(jmeno1, prijmeni1, rok1);
+		            }
+		           
+		            nacteny.setId(id);
+		            databaze.put(id, nacteny);
+		        }
+		        
+		        ctenar.close();
+		        System.out.println("Data byla uspesne nactena ze souboru");
+		        
+		    } catch (java.io.FileNotFoundException ex1) {
+		        System.out.println("Soubor nebyl nalezen");
+		    } catch (Exception ex2) {
+		        System.out.println("Chyba pri cteni dat");
+		    }
+		    break;
+		    
+        case 0:
+            String Loc = "jdbc:sqlite:moje_data.db";
+
+            try (java.sql.Connection conn = java.sql.DriverManager.getConnection(Loc)) {
+                java.sql.Statement st = conn.createStatement();
+                st.execute("CREATE TABLE IF NOT EXISTS zamestnanci (id INTEGER PRIMARY KEY, jmeno TEXT, prijmeni TEXT, rok INTEGER, typ TEXT)");
+                st.execute("CREATE TABLE IF NOT EXISTS vazby (id_zam INTEGER, id_kol INTEGER, uroven TEXT)");
+
+                st.execute("DELETE FROM vazby");
+                st.execute("DELETE FROM zamestnanci");
+
+                String sqlZam = "INSERT INTO zamestnanci VALUES (?, ?, ?, ?, ?)";
+                java.sql.PreparedStatement psZam = conn.prepareStatement(sqlZam);
+
+                for (Employee e5 : databaze.values()) {
+                    psZam.setInt(1, e5.getId());
+                    psZam.setString(2, e5.getJmeno());
+                    psZam.setString(3, e5.getPrijmeni());
+                    psZam.setInt(4, e5.getRok());
+                    psZam.setString(5, (e5 instanceof DataAnalyst) ? "Analytik" : "Expert");
+                    psZam.executeUpdate();
+                    
+                    String sqlVaz = "INSERT INTO vazby VALUES (?, ?, ?)";
+                    java.sql.PreparedStatement psVaz = conn.prepareStatement(sqlVaz);
+                    for (java.util.Map.Entry<Integer, Spoluprace> entry : e5.getKolegove().entrySet()) {
+                        psVaz.setInt(1, e5.getId());
+                        psVaz.setInt(2, entry.getKey());
+                        psVaz.setString(3, entry.getValue().name());
+                        psVaz.executeUpdate();
+                    }
+                }
+                System.out.println("Data byla ulozena lokalne do souboru moje_data.db");
+
+            } catch (java.sql.SQLException ex) {
+                System.out.println("Chyba lokalni databaze " + ex.getMessage());
+            }
+
+            bezi = false;
+            System.out.println("Program ukoncen");
+            break;
+
+        default:
+            System.out.println("Neplatna volba, zkuste to znovu.");
+		}
+		
+	}
+	}
+	}
+

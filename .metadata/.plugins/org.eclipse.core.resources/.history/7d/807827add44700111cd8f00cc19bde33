@@ -1,0 +1,57 @@
+package a;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
+
+public class Test {
+
+	public static void main(String[] args) {
+		Scanner sc = new Scanner(System.in);
+		Map<Integer, Employee> databaze = new HashMap<>();
+		boolean bezi = true;
+		while(bezi = true) {
+			
+		
+			
+		System.out.println("menu databáze");
+		System.out.println("1. přidání nového zaměstnance");
+		System.out.println("2. konec");
+		int volba = sc.nextInt();
+        sc.nextLine();
+		switch(volba) {
+		case 1:
+            System.out.print("Jméno: ");
+            String jmeno = sc.nextLine();
+            System.out.print("Příjmení: ");
+            String prijmeni = sc.nextLine();
+            System.out.print("Rok narození: ");
+            int rok = sc.nextInt();
+            
+            System.out.print("Typ (1-Analytik, 2-Specialista): ");
+            int typ = sc.nextInt();
+            
+            Employee novy;
+            if (typ == 1) {
+                novy = new DataAnalyst(jmeno, prijmeni, rok);
+            } else {
+                novy = new SecurityExpert(jmeno, prijmeni, rok);
+            }
+            
+            databaze.put(novy.getId(), novy);
+            System.out.println("Uloženo pod ID: " + novy.getId());
+            break;
+
+        case 0:
+            bezi = false;
+            System.out.println("konec");
+            break;
+
+        default:
+            System.out.println("Neplatná volba, zkuste to znovu.");
+		}
+		
+	}
+	}
+
+}

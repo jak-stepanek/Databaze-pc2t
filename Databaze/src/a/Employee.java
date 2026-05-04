@@ -1,0 +1,59 @@
+package a;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import a.spoluprace.Spoluprace;
+
+public abstract class Employee {
+	private static int idCounter = 0;
+	private int id;
+	private int RokNarozeni;
+	private String jmeno;
+	private String prijmeni;
+	private Map<Integer, Spoluprace> kolegove = new HashMap<>();
+	
+	public Employee(String jmeno, String prijmeni, int RokNarozeni)
+	{
+		this.id=idCounter++;
+		this.RokNarozeni = RokNarozeni;
+		this.prijmeni = prijmeni;
+		this.jmeno = jmeno;
+		
+	}
+
+ public Map<Integer, Spoluprace> getKolegove() {
+	return kolegove;
+ }
+ public void setKolegove(Map<Integer, Spoluprace> kolegove) {
+	this.kolegove = kolegove;
+ }
+ public int getId() {
+
+	return id;
+ }
+public String getJmeno(){
+	return jmeno;
+}
+public String getPrijmeni(){
+	return prijmeni;
+}
+public int getRok() {
+	// TODO Auto-generated method stub
+	return RokNarozeni;
+}
+void pridejKolegu(int idKolegy, Spoluprace spoluprace) {
+    if (this.id != idKolegy) getKolegove().put(idKolegy, spoluprace);
+}
+void smazKolegu(int idKolegy) {
+getKolegove().remove(idKolegy);
+}
+
+public void setId(int id) {
+	this.id=id;
+	
+}
+public static void setidCounter(int novaHodnota) {
+    idCounter = novaHodnota;
+}
+}
