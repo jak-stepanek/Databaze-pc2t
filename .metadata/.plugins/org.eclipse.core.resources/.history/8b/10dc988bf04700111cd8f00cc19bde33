@@ -26,8 +26,7 @@ public class Test {
 	            if (vstup.isEmpty()) {
 	                continue; 	            }
 	            return Integer.parseInt(vstup);
-	        }
-	        catch (Exception e) {
+	        } catch (Exception e) {
 	            System.out.println("Chyba zadejte pouze cislo");
 	        }
 	    }
@@ -193,7 +192,6 @@ public class Test {
 				else {
 					System.out.println("Id"+idFind+"nebylo v databazi nalezeno");
 			}
-			break;
 		case 5:
 		    System.out.print("Zadejte ID zamestnance: ");
 		    int idDovednost = nactiCislo(sc);
