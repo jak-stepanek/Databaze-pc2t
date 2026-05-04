@@ -83,10 +83,10 @@ public class Test {
 		System.out.println("5. spusteni dovednosti zamestnance");
 		System.out.println("6. seradit zamestnance abecedne po skupinach");
 		System.out.println("7. statistiky o spolupraci ve firme");
-		System.out.println("8. pocet yamestnancu ve skupinach");
+		System.out.println("8. pocet zamestnancu ve skupinach");
 		System.out.println("9. ulozeni zamestnancu do souboru");
 		System.out.println("10. nacteni ze souboru");
-		System.out.println("0. konec, uloyeni do sql");
+		System.out.println("0. konec, ulozeni do sql");
 		int volba = nactiCislo(sc); 
 		switch(volba) {
 		case 1:
@@ -117,7 +117,7 @@ public class Test {
 		    int idZam = nactiCislo(sc);
 		    System.out.print("ID kolegy: ");
 		    int idKol = nactiCislo(sc);
-		    sc.nextLine();
+		    
 		    if (idZam == idKol) {
 		        System.out.println("Zamestnanec nemuze spolupracovat sam se sebou!");
 		        break;

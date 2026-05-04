@@ -1,0 +1,2 @@
+0;petr;svetr;5000;Analytik
+1;jakub;nákup;4000;Expert
